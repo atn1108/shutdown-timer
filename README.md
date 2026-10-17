@@ -43,8 +43,12 @@ python make_icon.py   # sinh lại assets/icon.png + build/icon.ico
 | Hành động | Cách thực hiện | Lưu ý |
 |---|---|---|
 | Tắt máy / Khởi động lại | Lệnh Windows `shutdown /s|/r /t` | Sống lâu hơn app — thoát app vẫn tắt/ khởi động lại đúng giờ |
-| Ngủ | App-level (SetSuspendState) | Giữ nguyên app đang mở, KHÔNG đóng phiên AI. Cần app đang chạy |
-| Đăng xuất | App-level (`logoff`) | Vẫn đóng phiên AI trước khi đăng xuất. Cần app đang chạy |
+| Ngủ | Task Scheduler (`Register-ScheduledTask`) | Giữ nguyên mọi app đang mở, KHÔNG đóng phiên AI. Sống lâu hơn app |
+| Đăng xuất | Task Scheduler (`logoff`) | Vẫn đóng phiên AI trước. Sống lâu hơn app |
+
+Đặc điểm chung: **hẹn giờ sống lâu hơn app** — thoát/ mở lại app bao nhiêu lần,
+Windows và Task Scheduler vẫn thực hiện đúng giờ. Task sleep/logoff tự hủy ngay
+trước khi chạy nên không để rác trong Task Scheduler. Hủy hẹn giờ = xóa task + `shutdown /a`.
 
 ### Tray icon
 
@@ -71,6 +75,7 @@ Danh sách ưu tiên nằm trong `renderer.js` (`INTERRUPT_PRIORITY`) — sửa 
   hiển thị lại từ timestamp mỗi 250ms → không bị trôi khi máy load nặng.
 - **Khôi phục phiên trước:** `endTime` lưu trong `localStorage`, mở lại app vẫn tiếp tục đếm.
 - **Cảnh báo cuối:** còn ≤ 60 giây, vòng tròn đỏ phát sáng pulse.
+- **Taskbar progress:** % thời gian còn lại hiện trên icon taskbar Windows (tiến trình xanh thu dần).
 - **Hỏi trước khi đóng:** đang hẹn giờ mà bấm ✕ sẽ hiện dialog xác nhận
   (đóng app không hủy hẹn giờ — Windows vẫn tắt đúng giờ).
 - **An toàn:** thời gian tối thiểu 5 giây, luôn hủy được, không ép buộc tắt tiến trình

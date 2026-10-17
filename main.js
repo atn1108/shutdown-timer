@@ -12,8 +12,6 @@ let forceClose = false;
 
 // Hành động đang chạy (shutdown | restart | sleep | logoff)
 let currentAction = 'shutdown';
-// Timer app-level cho sleep/logoff (2 hành động này không có lệnh trì hoãn của Windows)
-let pendingLocalTimer = null;
 
 // --- Lệnh OS ------------------------------------------------------------
 function runCommand(cmd) {
@@ -35,30 +33,46 @@ function cancelShutdown() {
   return runCommand('shutdown /a').then((r) => ({ ...r, ok: true }));
 }
 
-function execSleep() {
-  // SetSuspendState(PowerState.Suspend, force=false, disableWake=false)
-  runCommand(
-    `powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; ` +
-      `[System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false); exit 0"`
-  );
+// Chạy PowerShell qua -EncodedCommand: không bao giờ vỡ do escaping dấu nháy
+function psEncoded(script) {
+  const b64 = Buffer.from(script, 'utf16le').toString('base64');
+  return `powershell -NoProfile -NonInteractive -EncodedCommand ${b64}`;
 }
 
-function execLogoff() {
-  runCommand('logoff');
+// Ngủ/Đăng xuất đặt lịch qua Task Scheduler → SỐNG LÂU HƠN APP:
+// thoát app, restart app, resume… task vẫn tự thực hiện đúng giờ.
+// Task tự hủy trước khi chạy (không để rác trong Task Scheduler).
+const TASK_NAMES = { sleep: 'ShutdownTimer-Sleep', logoff: 'ShutdownTimer-Logoff' };
+
+function createScheduledTask(action, atMs) {
+  const taskName = TASK_NAMES[action];
+  const inner =
+    action === 'sleep'
+      ? `Unregister-ScheduledTask -TaskName '${taskName}' -Confirm:$false -ErrorAction SilentlyContinue; ` +
+        `Add-Type -AssemblyName System.Windows.Forms; ` +
+        `[System.Windows.Forms.Application]::SetSuspendState('Suspend',$false,$false)`
+      : `Unregister-ScheduledTask -TaskName '${taskName}' -Confirm:$false -ErrorAction SilentlyContinue; logoff`;
+  const script = `
+$ErrorActionPreference = 'Stop'
+$at = [DateTimeOffset]::FromUnixTimeMilliseconds(${Math.round(atMs)}).LocalDateTime
+$arg = '-NoProfile -WindowStyle Hidden -Command "${inner.replace(/'/g, "''")}"'
+$taskAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg
+$trigger = New-ScheduledTaskTrigger -Once -At $at
+Register-ScheduledTask -TaskName '${taskName}' -Action $taskAction -Trigger $trigger -Force -ErrorAction Stop | Out-Null
+exit 0
+`;
+  return runCommand(psEncoded(script));
 }
 
-function clearLocalTimer() {
-  if (pendingLocalTimer) {
-    clearTimeout(pendingLocalTimer.timer);
-    pendingLocalTimer = null;
-  }
+function deleteScheduledTasks() {
+  return Promise.all(
+    Object.values(TASK_NAMES).map((n) => runCommand(`schtasks /delete /tn ${n} /f`))
+  ).then(() => ({ ok: true }));
 }
 
-// Đặt lịch hành động — shutdown/restart giao thẳng cho Windows (sống lâu hơn app),
-// sleep/logoff chạy app-level (cần app sống — tray giữ app sống khi đóng cửa sổ)
+// Đặt lịch hành động — shutdown/restart giao cho Windows, sleep/logoff giao cho Task Scheduler
 async function scheduleAction(seconds, action) {
   const s = Math.min(MAX_SECONDS, Math.max(MIN_SECONDS, Math.round(seconds)));
-  clearLocalTimer();
 
   if (action === 'shutdown' || action === 'restart') {
     const r = await scheduleOS(s, action);
@@ -66,20 +80,14 @@ async function scheduleAction(seconds, action) {
     return r.ok ? { ok: true, seconds: s, action } : r;
   }
 
-  // sleep / logoff: lên lịch trong main process
   currentAction = action;
-  const timer = setTimeout(() => {
-    pendingLocalTimer = null;
-    if (action === 'sleep') execSleep();
-    else execLogoff();
-  }, s * 1000);
-  pendingLocalTimer = { timer, action };
-  return { ok: true, seconds: s, action };
+  const r = await createScheduledTask(action, Date.now() + s * 1000);
+  return r.ok ? { ok: true, seconds: s, action } : r;
 }
 
 async function cancelScheduled() {
-  clearLocalTimer();
-  const r = await cancelShutdown(); // best-effort cho cả khi không có lịch OS
+  await deleteScheduledTasks();   // hủy lịch Task Scheduler (sleep/logoff)
+  const r = await cancelShutdown(); // hủy shutdown/restart của Windows
   return { ...r, ok: true };
 }
 
@@ -172,7 +180,6 @@ function showWindow() {
 
 function quitApp() {
   if (timerRunning) {
-    const isLocal = currentAction === 'sleep' || currentAction === 'logoff';
     const choice = dialog.showMessageBoxSync(mainWindow || undefined, {
       type: 'warning',
       buttons: ['Ở lại', 'Vẫn thoát'],
@@ -180,10 +187,9 @@ function quitApp() {
       cancelId: 0,
       title: 'Hẹn giờ đang chạy',
       message: 'Hẹn giờ vẫn đang diễn ra.',
-      detail: isLocal
-        ? 'Hành động "Ngủ/Đăng xuất" sẽ bị HỦY nếu bạn thoát app hoàn toàn.\n' +
-          'Nếu chỉ đóng cửa sổ (✕) thì app chạy nền trong khay và vẫn đúng giờ.'
-        : 'Windows vẫn sẽ thực hiện đúng giờ kể cả khi bạn thoát ứng dụng.',
+      detail:
+        'Hẹn giờ vẫn được thực hiện đúng giờ kể cả khi bạn thoát ứng dụng\n' +
+        '(đặt lịch qua Windows/Task Scheduler). Hủy trước bằng nút "Hủy hẹn giờ" nếu muốn.',
     });
     if (choice !== 1) return;
   }
@@ -229,6 +235,14 @@ ipcMain.on('tray-tooltip', (_e, text) => {
 });
 ipcMain.on('win-minimize', () => mainWindow && mainWindow.minimize());
 ipcMain.on('win-close', () => mainWindow && mainWindow.close());
+// Renderer báo trạng thái: không hẹn giờ → dọn task rác của phiên trước
+ipcMain.on('sync-scheduled-tasks', (_e, active) => {
+  if (!active) deleteScheduledTasks();
+});
+// Thanh tiến trình trên icon taskbar Windows (0..1 = còn lại, -1 = ẩn)
+ipcMain.on('set-progress', (_e, v) => {
+  if (mainWindow) mainWindow.setProgressBar(typeof v === 'number' && v >= 0 && v <= 1 ? v : -1);
+});
 
 // Smoke test tự chạy khi bật env ST_SMOKE — kiểm chứng e2e UI → IPC → lệnh OS
 // (dùng shutdown /s /t 30 rồi hủy ngay; KHÔNG dùng cho restart/sleep/logoff)
@@ -261,6 +275,32 @@ async function smokeTest() {
     await sleep(1500);
     r = await js(`document.getElementById('statusText').textContent + ' | ' + document.getElementById('actionLabel').textContent`);
     log('after-cancel:', r);
+
+    const taskExists = (name) => new Promise((res) => exec(`schtasks /query /tn ${name}`, (e) => res(!e)));
+
+    // 6. sleep → Task Scheduler: tạo task thật, verify, hủy, verify xóa
+    await js(`document.querySelector('.seg__item[data-action="sleep"]').click();
+      document.getElementById('inputHours').value = 1;
+      document.getElementById('inputMinutes').value = 0;
+      document.getElementById('inputSeconds').value = 0;
+      document.getElementById('btnAction').click(); 'started'`);
+    await sleep(3500); // Register-ScheduledTask lần đầu ~1-2s
+    r = await js(`document.getElementById('statusText').textContent`);
+    log('sleep-running:', r);
+    log('sleep-task-created:', await taskExists('ShutdownTimer-Sleep'));
+    mainWindow.webContents.send('menu-cancel');
+    await sleep(2000);
+    log('sleep-task-after-cancel:', await taskExists('ShutdownTimer-Sleep'));
+
+    // 7. logoff tương tự
+    await js(`document.querySelector('.seg__item[data-action="logoff"]').click();
+      document.getElementById('btnAction').click(); 'started'`);
+    await sleep(3500);
+    log('logoff-task-created:', await taskExists('ShutdownTimer-Logoff'));
+    mainWindow.webContents.send('menu-cancel');
+    await sleep(2000);
+    log('logoff-task-after-cancel:', await taskExists('ShutdownTimer-Logoff'));
+
     log('SMOKE DONE');
   } catch (e) {
     log('SMOKE ERROR', e && e.message);
@@ -290,7 +330,7 @@ if (!gotLock) {
   });
 
   app.on('will-quit', () => {
-    clearLocalTimer();
+    // Lịch sleep/logoff sống trong Task Scheduler — KHÔNG xóa khi thoát
     if (tray) {
       tray.destroy();
       tray = null;

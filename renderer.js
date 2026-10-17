@@ -146,7 +146,7 @@ function setClockDefault() {
 
 /* ============ UI states ============ */
 function idleHint() {
-  if (action === "sleep") return "Chế độ Ngủ giữ nguyên các app đang mở — đóng cửa sổ vẫn chạy nền trong khay.";
+  if (action === "sleep") return "Máy sẽ tự ngủ — mọi app đang mở được giữ nguyên, thức dậy là còn nguyên.";
   if (action === "logoff") return "Đăng xuất sẽ đóng mọi app đang mở — nhớ lưu file trước.";
   return "Còn 60s: app tự đóng OpenCode → Cursor... trước khi tắt máy.";
 }
@@ -182,11 +182,12 @@ function renderCountdown(totalSeconds, remainingSeconds) {
   setTime(formatDuration(remainingSeconds));
   ringLabel.textContent = `${ACTIONS[action].cap} lúc ${formatClockTime(endTime)}`;
 
-  // Tooltip tray: cập nhật tối đa 1 lần/giây
+  // Tooltip tray + taskbar progress: cập nhật tối đa 1 lần/giây
   const secsLeft = Math.max(0, Math.ceil(remainingSeconds));
   if (secsLeft !== lastTipSec) {
     lastTipSec = secsLeft;
     setTrayTooltip(`Shutdown Timer — còn ${formatDuration(secsLeft)}`);
+    window.timerAPI.setProgress(Math.max(0, Math.min(1, remainingSeconds / totalSeconds)));
   }
 
   const urgent = remainingSeconds * 1000 <= URGENT_MS;
@@ -226,6 +227,7 @@ function finishCountdown() {
   btnAction.disabled = true;
   actionLabel.textContent = `Đang ${ACTIONS[action].verb}...`;
   window.timerAPI.setRunning(false);
+  window.timerAPI.setProgress(-1);
   localStorage.removeItem(STORE_KEY);
 }
 
@@ -277,6 +279,7 @@ function resetToIdle(message) {
   forceInterrupted = false;
   lastTipSec = null;
   window.timerAPI.setRunning(false);
+  window.timerAPI.setProgress(-1);
   setTrayTooltip("");
   localStorage.removeItem(STORE_KEY);
 
@@ -461,4 +464,7 @@ presetsEl.addEventListener("click", (e) => {
     localStorage.removeItem(STORE_KEY);
     if (mode !== "clock") setTime(formatDuration(readInputs()));
   }
+
+  // Không hẹn giờ → dọn task rác của phiên trước; có hẹn giờ → giữ (Task Scheduler tự chạy)
+  window.timerAPI.syncScheduledTasks(endTime !== null);
 })();
