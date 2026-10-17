@@ -4,6 +4,9 @@ node_modules/
 # OpenCode local data (không thuộc app)
 data/
 
+# Build output
+dist/
+
 # Build / debug artifacts
 *.log
 smoke.png

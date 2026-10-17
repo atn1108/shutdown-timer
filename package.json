@@ -4,10 +4,42 @@
   "description": "Hẹn giờ tắt máy - đếm ngược rồi tự shutdown",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win"
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^44.7.2"
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.atn1108.shutdowntimer",
+    "productName": "Shutdown Timer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "styles.css",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Shutdown Timer",
+      "artifactName": "ShutdownTimer-Setup-${version}.exe"
+    }
   }
 }

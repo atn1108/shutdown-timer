@@ -3,13 +3,32 @@
 App desktop nhỏ gọn cho Windows — **công việc duy nhất: đếm ngược rồi tự tắt máy**.
 Xây bằng Electron, giao diện dark OLED, hiệu ứng vòng đếm ngược phát sáng.
 
-## Chạy app
+## Cài đặt (người dùng cuối)
+
+Tải file cài `dist/ShutdownTimer-Setup-1.0.0.exe` (hoặc build lại — xem dưới),
+bấm đúp → cài một chạm (NSIS one-click): tự tạo shortcut **Desktop** + **Start Menu**,
+cài vào `%LOCALAPPDATA%\Programs`, không cần quyền admin.
+
+## Chạy app (developer)
 
 ```bash
 npm start
 ```
 
 Hoặc bấm đúp `start.bat` (không cần mở terminal).
+
+## Build file cài đặt
+
+```bash
+npm run dist
+```
+
+Kết quả: `dist/ShutdownTimer-Setup-<version>.exe` (electron-builder + NSIS).
+Icon `.exe` lấy từ `build/icon.ico` — muốn đổi icon thì sửa `make_icon.py` rồi chạy:
+
+```bash
+python make_icon.py   # sinh lại assets/icon.png + build/icon.ico
+```
 
 ## Cách dùng
 
@@ -51,5 +70,7 @@ preload.js    # contextBridge an toàn (contextIsolation, không nodeIntegration
 index.html    # markup
 styles.css    # design tokens + toàn bộ style
 renderer.js   # logic đếm ngược, presets, resume phiên trước
-assets/       # icon app
+assets/       # icon app (icon.png)
+build/        # icon.ico multi-size cho Windows (.exe)
+make_icon.py  # script sinh icon (PIL, supersample 4x)
 ``
