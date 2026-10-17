@@ -63,6 +63,7 @@ let mode = "countdown"; // countdown | clock
 let tickHandle = null;
 let graceInterrupted = false;
 let forceInterrupted = false;
+let autoConfirmHandle = null;
 let lastTipSec = null; // throttle tooltip tray 1/s
 
 ringProgress.style.strokeDasharray = String(CIRCUMFERENCE);
@@ -149,7 +150,7 @@ function setClockDefault() {
 function idleHint() {
   if (action === "sleep") return "Máy sẽ tự ngủ — mọi app đang mở được giữ nguyên, thức dậy là còn nguyên.";
   if (action === "logoff") return "Đăng xuất sẽ đóng mọi app đang mở — nhớ lưu file trước.";
-  return "Còn 60s: app tự đóng OpenCode → Cursor... trước khi tắt máy.";
+  return "Còn 60s: app tự đóng OpenCode → Cursor..., dialog Lưu file được tự bấm.";
 }
 
 /* Cập nhật mọi label theo action + mode khi đang ở trạng thái chờ */
@@ -242,11 +243,46 @@ async function interruptSessions(force) {
   statusText.textContent = runningNote;
   try {
     await window.timerAPI.interrupt(INTERRUPT_PRIORITY, force);
-    if (!force) showToast("Đã đóng các phiên AI đang mở");
+    if (!force) {
+      showToast("Đã đóng các phiên AI đang mở");
+      startAutoConfirm(); // dialog "Save" nào hiện ra sẽ được tự bấm
+    }
   } catch {
     /* app đã tự thoát giữa chừng là bình thường */
   }
   // status sẽ được renderCountdown tick sau cập nhật lại
+}
+
+/* ============ Tự bấm Lưu trên dialog sau khi close ============ */
+const PROCESS_NAMES = {
+  opencode: "OpenCode",
+  antigravity: "Antigravity",
+  cursor: "Cursor",
+  code: "VS Code",
+  windsurf: "Windsurf",
+  trae: "Trae",
+  claude: "Claude",
+  zed: "Zed",
+};
+
+// Từ sau mốc đóng lịch sự tới trước mốc kill 5s: cứ 2s kiểm tra — nếu dialog
+// Lưu (popup của app whitelist) đang ở foreground thì Enter bấm nút Save mặc định.
+// Đa file → mỗi Enter lưu một file, lần check kế tiếp gặp dialog tiếp theo.
+function startAutoConfirm() {
+  if (autoConfirmHandle) return;
+  autoConfirmHandle = setInterval(async () => {
+    if (endTime === null || Date.now() > endTime - INTERRUPT_FORCE_MS - 5000) {
+      clearInterval(autoConfirmHandle);
+      autoConfirmHandle = null;
+      return;
+    }
+    try {
+      const r = await window.timerAPI.autoConfirm(INTERRUPT_PRIORITY);
+      if (r && r.confirmed) showToast(`Đã tự bấm Lưu — ${PROCESS_NAMES[r.confirmed] || r.confirmed}`);
+    } catch {
+      /* app đã tự thoát giữa chừng là bình thường */
+    }
+  }, 2000);
 }
 
 function maybeInterrupt(remainingMs) {

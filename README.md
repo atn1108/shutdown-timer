@@ -64,7 +64,12 @@ Khởi động lại và Đăng xuất — **chế độ Ngủ giữ nguyên m�
 1. **Còn 60 giây** → đóng lịch sự (`CloseMainWindow`) theo thứ tự:
    `opencode → antigravity → cursor → code (VS Code) → windsurf → trae → claude → zed`
    — mỗi app được nhường 250ms để kịp lưu file / hiện dialog.
-2. **Còn 20 giây** → force-kill những process còn sót (`Stop-Process -Force`).
+2. **Tự bấm Lưu** — cứ 2 giây app kiểm tra: nếu dialog Lưu file (cửa sổ popup của
+   app whitelist) đang ở foreground thì tự gửi `Enter` để xác nhận nút **Save** mặc định
+   (đa file → mỗi lần Enter lưu một file). Chỉ bấm khi chắc chắn đó là **hộp thoại** —
+   không bao giờ gõ nhầm vào cửa sổ đang gõ chữ hay app khác. Dialog biến mất /
+   tự lưu sẵn (hot exit, OpenCode lưu session) thì chẳng có gì để bấm.
+3. **Còn 20 giây** → force-kill những process còn sót (`Stop-Process -Force`).
 
 Danh sách ưu tiên nằm trong `renderer.js` (`INTERRUPT_PRIORITY`) — sửa freely cho phù hợp workflow của bạn.
 

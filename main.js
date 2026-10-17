@@ -121,6 +121,46 @@ function interruptSessions(names, force) {
   });
 }
 
+// Tự bấm nút "Save" trên dialog Lưu file hiện ra sau khi gửi close.
+// An toàn tuyệt đối: CHỈ Enter khi foreground là CỬA SỔ HỘP THOẠI (WS_POPUP)
+// của app whitelist — không bao giờ gõ nhầm vào cửa sổ đang gõ chữ hay app khác.
+function autoConfirmSave(names) {
+  return new Promise((resolve) => {
+    const safe = (Array.isArray(names) ? names : []).filter((n) => NAME_RE.test(n));
+    if (!safe.length) return resolve({ ok: true, confirmed: null });
+    const list = safe.map((n) => `'${n}'`).join(',');
+    const script = `
+$ErrorActionPreference = 'SilentlyContinue'
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public class FG {
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+}
+'@
+$h = [FG]::GetForegroundWindow()
+if ($h -eq [IntPtr]::Zero) { Write-Output 'skip'; exit 0 }
+$procId = [uint32]0
+[FG]::GetWindowThreadProcessId($h, [ref]$procId) | Out-Null
+$names = @(${list})
+$p = Get-Process -Id $procId -ErrorAction SilentlyContinue
+if (-not $p -or $names -notcontains $p.ProcessName) { Write-Output 'skip'; exit 0 }
+$style = [FG]::GetWindowLong($h, -16)
+if (($style -band [int]0x80000000) -eq 0) { Write-Output 'skip'; exit 0 }
+[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+Write-Output ('confirmed:' + $p.ProcessName)
+exit 0
+`;
+    exec(psEncoded(script), { windowsHide: true }, (err, stdout) => {
+      const m = (stdout || '').trim().match(/confirmed:(\S+)/);
+      resolve({ ok: !err, confirmed: m ? m[1] : null });
+    });
+  });
+}
+
 // --- Window ------------------------------------------------------------
 function createWindow() {
   // Chiều cao theo màn hình thật (display scaling 125%+ dễ vượt đáy)
@@ -227,6 +267,7 @@ ipcMain.handle('schedule', (_e, seconds, action) =>
 );
 ipcMain.handle('cancel', () => cancelScheduled());
 ipcMain.handle('interrupt', (_e, payload) => interruptSessions(payload && payload.names, payload && payload.force));
+ipcMain.handle('auto-confirm', (_e, payload) => autoConfirmSave(payload));
 ipcMain.on('set-running', (_e, value) => {
   timerRunning = !!value;
 });

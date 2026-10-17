@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('timerAPI', {
   schedule: (seconds, action) => ipcRenderer.invoke('schedule', seconds, action),
   cancel: () => ipcRenderer.invoke('cancel'),
   interrupt: (names, force) => ipcRenderer.invoke('interrupt', { names, force: !!force }),
+  autoConfirm: (names) => ipcRenderer.invoke('auto-confirm', names),
   setRunning: (value) => ipcRenderer.send('set-running', value),
   setTrayTooltip: (text) => ipcRenderer.send('tray-tooltip', text),
   setProgress: (value) => ipcRenderer.send('set-progress', value),

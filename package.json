@@ -1,6 +1,6 @@
 {
   "name": "shutdown-timer",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Hẹn giờ tắt máy - đếm ngược rồi tự shutdown",
   "main": "main.js",
   "scripts": {
