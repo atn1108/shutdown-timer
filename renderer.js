@@ -5,6 +5,7 @@ const ringSection = document.getElementById("ringSection");
 const ringProgress = document.getElementById("ringProgress");
 const timeDisplay = document.getElementById("timeDisplay");
 const ringLabel = document.getElementById("ringLabel");
+const ringCancel = document.getElementById("ringCancel");
 const statusLine = document.getElementById("statusLine");
 const statusText = document.getElementById("statusText");
 const presetsEl = document.getElementById("presets");
@@ -198,6 +199,7 @@ function enterRunningState(totalSeconds) {
   const remaining = (endTime - Date.now()) / 1000;
   renderCountdown(totalSeconds, remaining);
 
+  ringSection.classList.add("ring--running");
   statusLine.classList.add("status--active");
   statusLine.classList.remove("status--done");
   statusText.textContent = `Hẹn giờ đang chạy — sẽ ${ACTIONS[action].verb} đúng giờ`;
@@ -226,6 +228,7 @@ function finishCountdown() {
 
   btnAction.disabled = true;
   actionLabel.textContent = `Đang ${ACTIONS[action].verb}...`;
+  ringSection.classList.remove("ring--running");
   window.timerAPI.setRunning(false);
   window.timerAPI.setProgress(-1);
   localStorage.removeItem(STORE_KEY);
@@ -284,6 +287,7 @@ function resetToIdle(message) {
   localStorage.removeItem(STORE_KEY);
 
   ringSection.classList.remove("ring--urgent");
+  ringSection.classList.remove("ring--running");
   setIdle(true);
   ringProgress.style.strokeDashoffset = "0";
   refreshIdleLabels();
@@ -335,14 +339,21 @@ async function start() {
 
 async function cancel() {
   btnAction.disabled = true;
+  ringCancel.disabled = true;
   await window.timerAPI.cancel();
   btnAction.disabled = false;
+  ringCancel.disabled = false;
   resetToIdle("Đã hủy hẹn giờ");
 }
 
 btnAction.addEventListener("click", () => {
   if (endTime === null) start();
   else cancel();
+});
+
+// Cancel nhanh từ bộ đếm: hover vào vòng khi đang chạy → bấm để hủy
+ringCancel.addEventListener("click", () => {
+  if (endTime !== null) cancel();
 });
 
 window.timerAPI.onMenuCancel(() => {

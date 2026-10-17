@@ -36,7 +36,8 @@ python make_icon.py   # sinh lại assets/icon.png + build/icon.ico
    (chọn giờ cố định kiểu 23:30 — nếu giờ đó đã qua thì hiểu là ngày mai).
 2. **Chọn hành động khi hết giờ:** Tắt máy / Khởi động lại / Ngủ / Đăng xuất.
 3. Bấm **Bắt đầu hẹn giờ**. Vòng tròn đếm ngược thu dần, hết giờ app tự thực hiện hành động.
-4. Muốn hoãn? Bấm **Hủy hẹn giờ** bất cứ lúc nào (chạy `shutdown /a` / hủy lịch app-level).
+4. Muốn hoãn? Bấm **Hủy hẹn giờ** bất cứ lúc nào (chạy `shutdown /a` / hủy lịch app-level)
+   — hoặc **hover vào vòng đếm**: nút hủy hiện ngay giữa đồng hồ, tiện nhất khi mắt đang dán vào bộ đếm.
 
 ### Chế độ hành động
 
