@@ -62,35 +62,85 @@
 
     <!-- Time picker -->
     <section class="panel">
-      <div class="presets" id="presets">
-        <button class="chip" data-minutes="15">15 phút</button>
-        <button class="chip" data-minutes="30">30 phút</button>
-        <button class="chip" data-minutes="45">45 phút</button>
-        <button class="chip" data-minutes="60">1 giờ</button>
-        <button class="chip" data-minutes="120">2 giờ</button>
-        <button class="chip" data-minutes="240">4 giờ</button>
+      <!-- Cách đặt lịch: đếm ngược hoặc theo giờ cố định -->
+      <div class="seg" id="modeSeg" role="radiogroup" aria-label="Cách đặt lịch">
+        <button class="seg__item seg__item--active" data-mode="countdown" role="radio" aria-checked="true">Đếm ngược</button>
+        <button class="seg__item" data-mode="clock" role="radio" aria-checked="false">Theo giờ</button>
       </div>
 
-      <div class="time-inputs">
+      <!-- Mode đếm ngược: preset + nhập tay -->
+      <div id="countdownPane">
+        <div class="presets" id="presets">
+          <button class="chip" data-minutes="15">15 phút</button>
+          <button class="chip" data-minutes="30">30 phút</button>
+          <button class="chip" data-minutes="45">45 phút</button>
+          <button class="chip" data-minutes="60">1 giờ</button>
+          <button class="chip" data-minutes="120">2 giờ</button>
+          <button class="chip" data-minutes="240">4 giờ</button>
+        </div>
+
+        <div class="time-inputs">
+          <label class="field">
+            <input type="number" id="inputHours" min="0" max="99" value="0" inputmode="numeric" aria-label="Giờ" />
+            <span class="field__suffix">giờ</span>
+          </label>
+          <span class="sep">:</span>
+          <label class="field">
+            <input type="number" id="inputMinutes" min="0" max="59" value="30" inputmode="numeric" aria-label="Phút" />
+            <span class="field__suffix">phút</span>
+          </label>
+          <span class="sep">:</span>
+          <label class="field">
+            <input type="number" id="inputSeconds" min="0" max="59" value="0" inputmode="numeric" aria-label="Giây" />
+            <span class="field__suffix">giây</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Mode theo giờ: chọn giờ cố định HH:MM -->
+      <div id="clockPane" class="time-inputs time-inputs--clock" hidden>
         <label class="field">
-          <input type="number" id="inputHours" min="0" max="99" value="0" inputmode="numeric" aria-label="Giờ" />
+          <input type="number" id="inputClockHours" min="0" max="23" value="23" inputmode="numeric" aria-label="Giờ cố định" />
           <span class="field__suffix">giờ</span>
         </label>
         <span class="sep">:</span>
         <label class="field">
-          <input type="number" id="inputMinutes" min="0" max="59" value="30" inputmode="numeric" aria-label="Phút" />
+          <input type="number" id="inputClockMinutes" min="0" max="59" value="30" inputmode="numeric" aria-label="Phút cố định" />
           <span class="field__suffix">phút</span>
-        </label>
-        <span class="sep">:</span>
-        <label class="field">
-          <input type="number" id="inputSeconds" min="0" max="59" value="0" inputmode="numeric" aria-label="Giây" />
-          <span class="field__suffix">giây</span>
         </label>
       </div>
     </section>
 
-    <!-- Footer: action + hint (1 nhóm chặt, neo đáy) -->
+    <!-- Footer: hành động + nút + hint (1 nhóm chặt, neo đáy) -->
     <div class="footer">
+    <!-- Hành động sẽ làm khi hết giờ -->
+    <div class="seg seg--action" id="actionSeg" role="radiogroup" aria-label="Hành động khi hết giờ">
+      <button class="seg__item seg__item--active" data-action="shutdown" role="radio" aria-checked="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2v8" /><path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+        </svg>
+        <span>Tắt máy</span>
+      </button>
+      <button class="seg__item" data-action="restart" role="radio" aria-checked="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+        </svg>
+        <span>Khởi động lại</span>
+      </button>
+      <button class="seg__item" data-action="sleep" role="radio" aria-checked="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+        <span>Ngủ</span>
+      </button>
+      <button class="seg__item" data-action="logoff" role="radio" aria-checked="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m16 17 5-5-5-5" /><path d="M21 12H9" /><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        </svg>
+        <span>Đăng xuất</span>
+      </button>
+    </div>
+
     <button class="action" id="btnAction">
       <svg class="action__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 2v8" />

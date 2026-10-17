@@ -32,14 +32,29 @@ python make_icon.py   # sinh lại assets/icon.png + build/icon.ico
 
 ## Cách dùng
 
-1. Chọn thời gian: bấm preset (15 phút → 4 giờ) **hoặc** nhập giờ : phút : giây tùy ý.
-2. Bấm **Bắt đầu hẹn giờ** — app đặt lệnh `shutdown /s /t <giây>` cho Windows.
-3. Vòng tròn đếm ngược thu dần, khi hết giờ máy tự tắt.
-4. Muốn hoãn? Bấm **Hủy hẹn giờ** bất cứ lúc nào trước khi hết giờ (chạy `shutdown /a`).
+1. **Chọn cách đặt lịch:** `Đếm ngược` (preset hoặc nhập giờ:phút:giây) **hoặc** `Theo giờ`
+   (chọn giờ cố định kiểu 23:30 — nếu giờ đó đã qua thì hiểu là ngày mai).
+2. **Chọn hành động khi hết giờ:** Tắt máy / Khởi động lại / Ngủ / Đăng xuất.
+3. Bấm **Bắt đầu hẹn giờ**. Vòng tròn đếm ngược thu dần, hết giờ app tự thực hiện hành động.
+4. Muốn hoãn? Bấm **Hủy hẹn giờ** bất cứ lúc nào (chạy `shutdown /a` / hủy lịch app-level).
+
+### Chế độ hành động
+
+| Hành động | Cách thực hiện | Lưu ý |
+|---|---|---|
+| Tắt máy / Khởi động lại | Lệnh Windows `shutdown /s|/r /t` | Sống lâu hơn app — thoát app vẫn tắt/ khởi động lại đúng giờ |
+| Ngủ | App-level (SetSuspendState) | Giữ nguyên app đang mở, KHÔNG đóng phiên AI. Cần app đang chạy |
+| Đăng xuất | App-level (`logoff`) | Vẫn đóng phiên AI trước khi đăng xuất. Cần app đang chạy |
+
+### Tray icon
+
+Đóng cửa sổ (✕) trong khi hẹn giờ = **ẩn vào khay hệ thống**, app vẫn đếm (tooltip hiện `còn HH:MM:SS`).
+Chuột phải icon khay: Mở app / Hủy hẹn giờ / Thoát. Không hẹn giờ thì ✕ = thoát hẳn.
 
 ## Đóng các phiên AI trước khi tắt
 
-Trước khi máy tắt, app tự "dọn dẹp" các phiên AI/code đang mở theo thứ tự ưu tiên:
+Trước khi hết giờ, app tự "dọn dẹp" các phiên AI/code đang mở (áp dụng cho Tắt máy,
+Khởi động lại và Đăng xuất — **chế độ Ngủ giữ nguyên mọi app**):
 
 1. **Còn 60 giây** → đóng lịch sự (`CloseMainWindow`) theo thứ tự:
    `opencode → antigravity → cursor → code (VS Code) → windsurf → trae → claude → zed`
@@ -50,8 +65,8 @@ Danh sách ưu tiên nằm trong `renderer.js` (`INTERRUPT_PRIORITY`) — sửa 
 
 ## Chi tiết kỹ thuật
 
-- **Giao diện:** frameless window 460×700, titlebar tùy chỉnh, radial gradient nền slate-900,
-  vòng progress SVG (gradient cam→đỏ, `stroke-dashoffset` animate), font Inter.
+- **Chi tiết kỹ thuật:** frameless window 460×(≤720, tự co theo màn hình), titlebar tùy chỉnh,
+  radial gradient nền slate-900, vòng progress SVG (gradient cam→đỏ), font Inter.
 - **Đếm ngược chính xác bằng timestamp:** `endTime = Date.now() + giây * 1000`,
   hiển thị lại từ timestamp mỗi 250ms → không bị trôi khi máy load nặng.
 - **Khôi phục phiên trước:** `endTime` lưu trong `localStorage`, mở lại app vẫn tiếp tục đếm.
