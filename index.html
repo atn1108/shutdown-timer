@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'" />
+  <title>Shutdown Timer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Custom titlebar -->
+  <header class="titlebar">
+    <div class="titlebar__title">
+      <svg class="titlebar__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2v8" />
+        <path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+      </svg>
+      <span>Shutdown Timer</span>
+    </div>
+    <div class="titlebar__controls">
+      <button id="btnMinimize" class="titlebar__btn" aria-label="Thu nhỏ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14" /></svg>
+      </button>
+      <button id="btnClose" class="titlebar__btn titlebar__btn--close" aria-label="Đóng">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- Hero: countdown + status (1 nhóm chặt) -->
+    <div class="hero">
+    <section class="ring" id="ringSection" aria-live="polite">
+      <svg class="ring__svg" viewBox="0 0 260 260">
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#F97316" />
+            <stop offset="100%" stop-color="#DC2626" />
+          </linearGradient>
+        </defs>
+        <circle class="ring__track" cx="130" cy="130" r="114" />
+        <circle class="ring__progress" id="ringProgress" cx="130" cy="130" r="114" />
+      </svg>
+      <div class="ring__center">
+        <div class="ring__time" id="timeDisplay">00:00</div>
+        <div class="ring__label" id="ringLabel">Chưa đặt lịch</div>
+      </div>
+    </section>
+
+    <!-- Status -->
+    <div class="status" id="statusLine">
+      <svg class="status__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+      <span id="statusText">Máy sẽ tự tắt sau khi đếm ngược xong</span>
+    </div>
+    </div>
+
+    <!-- Time picker -->
+    <section class="panel">
+      <div class="presets" id="presets">
+        <button class="chip" data-minutes="15">15 phút</button>
+        <button class="chip" data-minutes="30">30 phút</button>
+        <button class="chip" data-minutes="45">45 phút</button>
+        <button class="chip" data-minutes="60">1 giờ</button>
+        <button class="chip" data-minutes="120">2 giờ</button>
+        <button class="chip" data-minutes="240">4 giờ</button>
+      </div>
+
+      <div class="time-inputs">
+        <label class="field">
+          <input type="number" id="inputHours" min="0" max="99" value="0" inputmode="numeric" aria-label="Giờ" />
+          <span class="field__suffix">giờ</span>
+        </label>
+        <span class="sep">:</span>
+        <label class="field">
+          <input type="number" id="inputMinutes" min="0" max="59" value="30" inputmode="numeric" aria-label="Phút" />
+          <span class="field__suffix">phút</span>
+        </label>
+        <span class="sep">:</span>
+        <label class="field">
+          <input type="number" id="inputSeconds" min="0" max="59" value="0" inputmode="numeric" aria-label="Giây" />
+          <span class="field__suffix">giây</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Footer: action + hint (1 nhóm chặt, neo đáy) -->
+    <div class="footer">
+    <button class="action" id="btnAction">
+      <svg class="action__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2v8" />
+        <path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+      </svg>
+      <span id="actionLabel">Bắt đầu hẹn giờ</span>
+    </button>
+
+    <p class="hint" id="hintText">Còn 60s: app tự đóng OpenCode → Cursor... trước khi tắt máy.</p>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

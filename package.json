@@ -1,0 +1,13 @@
+{
+  "name": "shutdown-timer",
+  "version": "1.0.0",
+  "description": "Hẹn giờ tắt máy - đếm ngược rồi tự shutdown",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.2"
+  }
+}
