@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, screen, globalShortcut } = require('electron');
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -193,7 +193,7 @@ function createNightOverlays() {
       show: false,
       webPreferences: { backgroundThrottling: false },
     });
-    w.setAlwaysOnTop(true, 'screen-saver');
+    w.setAlwaysOnTop(true, 'floating'); // trên mọi app thường, NHƯNG dưới app timer
     w.setIgnoreMouseEvents(true);
     w.loadFile('overlay.html');
     w.once('ready-to-show', () => w.show());
@@ -325,7 +325,16 @@ ipcMain.handle('cancel', () => cancelScheduled());
 ipcMain.handle('interrupt', (_e, payload) => interruptSessions(payload && payload.names, payload && payload.force));
 ipcMain.handle('auto-confirm', (_e, payload) => autoConfirmSave(payload));
 ipcMain.handle('detect-sessions', (_e, payload) => detectSessions(payload));
-ipcMain.on('night-overlay', (_e, on) => { on ? createNightOverlays() : closeNightOverlays(); });
+ipcMain.on('night-overlay', (_e, on) => {
+  if (on) {
+    createNightOverlays();
+    // App timer nổi TRÊN lớp phủ → nút 🌙 / Hủy luôn thấy được và bấm được
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  } else {
+    closeNightOverlays();
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(false);
+  }
+});
 ipcMain.on('set-running', (_e, value) => {
   timerRunning = !!value;
 });
@@ -422,6 +431,10 @@ if (!gotLock) {
     createWindow();
     createTray();
     if (process.env.ST_SMOKE) setTimeout(smokeTest, 1200);
+    // Ctrl+Alt+N: bật/tắt chế độ ngủ từ bất cứ đâu (khi app bị chôn dưới đống cửa sổ)
+    globalShortcut.register('Control+Alt+N', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('toggle-night');
+    });
   });
 
   app.on('window-all-closed', () => {
@@ -430,6 +443,7 @@ if (!gotLock) {
 
   app.on('will-quit', () => {
     // Lịch sleep/logoff sống trong Task Scheduler — KHÔNG xóa khi thoát
+    globalShortcut.unregisterAll();
     closeNightOverlays();
     if (tray) {
       tray.destroy();

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('timerAPI', {
   autoConfirm: (names) => ipcRenderer.invoke('auto-confirm', names),
   detectSessions: (names) => ipcRenderer.invoke('detect-sessions', names),
   setNightOverlay: (on) => ipcRenderer.send('night-overlay', !!on),
+  onToggleNight: (cb) => ipcRenderer.on('toggle-night', () => cb()),
   setRunning: (value) => ipcRenderer.send('set-running', value),
   setTrayTooltip: (text) => ipcRenderer.send('tray-tooltip', text),
   setProgress: (value) => ipcRenderer.send('set-progress', value),

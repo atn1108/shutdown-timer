@@ -332,6 +332,8 @@ function setNightOverlay(on) {
 }
 
 btnNight.addEventListener("click", () => setNightOverlay(!nightOn));
+// Ctrl+Alt+N (toàn cục) → main đẩy event về đây để toggle đồng bộ state
+window.timerAPI.onToggleNight(() => setNightOverlay(!nightOn));
 // Khôi phục khi mở lại app
 setNightOverlay(localStorage.getItem(NIGHT_KEY) === "1");
 
