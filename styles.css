@@ -107,6 +107,12 @@ body {
   color: #fff;
 }
 
+/* Nút chế độ ngủ: sáng xanh accent khi overlay đang bật */
+.titlebar__btn--night.on,
+.titlebar__btn--night.on:hover {
+  color: var(--color-accent);
+}
+
 /* ============ Content ============ */
 /*
  * Section spacing hierarchy (ui-ux-pro-max): 3 tầng

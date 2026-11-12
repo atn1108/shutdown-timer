@@ -9,6 +9,7 @@ const ringCancel = document.getElementById("ringCancel");
 const statusLine = document.getElementById("statusLine");
 const sessionsLine = document.getElementById("sessionsLine");
 const sessionsText = document.getElementById("sessionsText");
+const btnNight = document.getElementById("btnNight");
 const statusText = document.getElementById("statusText");
 const presetsEl = document.getElementById("presets");
 const inputHours = document.getElementById("inputHours");
@@ -34,6 +35,7 @@ const MIN_SECONDS = 5;
 const STORE_KEY = "shutdown-timer:endTime";
 const ACTION_KEY = "shutdown-timer:action";
 const MODE_KEY = "shutdown-timer:mode";
+const NIGHT_KEY = "shutdown-timer:night";
 const URGENT_MS = 60 * 1000;
 
 // Hành động khi hết giờ + tên tiếng Việt cho mọi label
@@ -314,6 +316,24 @@ async function refreshSessions() {
 
 setInterval(refreshSessions, 5000);
 refreshSessions();
+
+/* ============ Chế độ ngủ: phủ tối toàn màn hình ============ */
+// Lớp phủ gần đen (gradient + grain) đè lên MỌI màn hình, click-through —
+// agent autopilot dưới đó vẫn chạy; app timer vẫn bấm được (nút Hủy, hover ring).
+// Trạng thái nhớ trong localStorage → mở lại app vẫn giữ.
+let nightOn = false;
+
+function setNightOverlay(on) {
+  nightOn = !!on;
+  localStorage.setItem(NIGHT_KEY, on ? "1" : "0");
+  btnNight.classList.toggle("on", nightOn);
+  btnNight.setAttribute("aria-pressed", String(nightOn));
+  window.timerAPI.setNightOverlay(nightOn);
+}
+
+btnNight.addEventListener("click", () => setNightOverlay(!nightOn));
+// Khôi phục khi mở lại app
+setNightOverlay(localStorage.getItem(NIGHT_KEY) === "1");
 
 function maybeInterrupt(remainingMs) {
   // Chế độ Ngủ: KHÔNG đóng gì — máy thức lại đúng trạng thái

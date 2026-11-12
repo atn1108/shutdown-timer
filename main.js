@@ -9,6 +9,7 @@ let mainWindow = null;
 let tray = null;
 let timerRunning = false;
 let forceClose = false;
+let nightOverlays = []; // các cửa sổ phủ tối toàn màn hình (chế độ ngủ)
 
 // Hành động đang chạy (shutdown | restart | sleep | logoff)
 let currentAction = 'shutdown';
@@ -161,6 +162,45 @@ exit 0
   });
 }
 
+// --- Chế độ ngủ: phủ tối toàn màn hình --------------------------------
+// Mỗi display một cửa sổ trong suốt gần đen (gradient + grain), alwaysOnTop
+// mức 'screen-saver' và CLICK-THROUGH (setIgnoreMouseEvents) — agent dưới đó
+// vẫn dùng chuột bình thường, mình vẫn bấm được nút Hủy qua lớp mờ.
+function closeNightOverlays() {
+  for (const w of nightOverlays) {
+    if (!w.isDestroyed()) w.destroy();
+  }
+  nightOverlays = [];
+}
+
+function createNightOverlays() {
+  closeNightOverlays();
+  for (const display of screen.getAllDisplays()) {
+    const w = new BrowserWindow({
+      x: display.bounds.x,
+      y: display.bounds.y,
+      width: display.bounds.width,
+      height: display.bounds.height,
+      transparent: true,
+      frame: false,
+      resizable: false,
+      movable: false,
+      focusable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      fullscreenable: false,
+      enableLargerThanScreen: true,
+      show: false,
+      webPreferences: { backgroundThrottling: false },
+    });
+    w.setAlwaysOnTop(true, 'screen-saver');
+    w.setIgnoreMouseEvents(true);
+    w.loadFile('overlay.html');
+    w.once('ready-to-show', () => w.show());
+    nightOverlays.push(w);
+  }
+}
+
 // Live detect: app nào trong whitelist đang chạy (chỉ đọc, không đóng gì)
 function detectSessions(names) {
   return new Promise((resolve) => {
@@ -285,6 +325,7 @@ ipcMain.handle('cancel', () => cancelScheduled());
 ipcMain.handle('interrupt', (_e, payload) => interruptSessions(payload && payload.names, payload && payload.force));
 ipcMain.handle('auto-confirm', (_e, payload) => autoConfirmSave(payload));
 ipcMain.handle('detect-sessions', (_e, payload) => detectSessions(payload));
+ipcMain.on('night-overlay', (_e, on) => { on ? createNightOverlays() : closeNightOverlays(); });
 ipcMain.on('set-running', (_e, value) => {
   timerRunning = !!value;
 });
@@ -389,6 +430,7 @@ if (!gotLock) {
 
   app.on('will-quit', () => {
     // Lịch sleep/logoff sống trong Task Scheduler — KHÔNG xóa khi thoát
+    closeNightOverlays();
     if (tray) {
       tray.destroy();
       tray = null;

@@ -65,6 +65,16 @@ Khởi động lại và Đăng xuất — **chế độ Ngủ giữ nguyên m�
   tự quét tên process whitelist mỗi 5 giây (chỉ đọc, không đóng gì). Chọn **Ngủ** thì
   dòng đổi thành "giữ nguyên app đang mở" cho đúng sự thật.
 
+### Chế độ ngủ (phủ tối màn hình)
+
+Nút 🌙 trên titlebar — phủ một lớp **gần đen toàn màn hình** (gradient lạnh chảy rất
+chậm + film grain) để ngủ ngon khi agent chạy autopilot mà không phải tắt màn hình:
+
+- Phủ **tất cả các màn hình**, always-on-top, click-through — agent bên dưới vẫn
+  dùng chuột bình thường, app timer vẫn bấm được nút Hủy qua lớp mờ
+- Bấm lần nữa để tắt; trạng thái được nhớ khi mở lại app
+- App thoát (tắt máy/hủy/thoát) → lớp phủ tự biến mất theo
+
 1. **Còn 60 giây** → đóng lịch sự (`CloseMainWindow`) theo thứ tự:
    `opencode → antigravity → cursor → code (VS Code) → windsurf → trae → claude → zed`
    — mỗi app được nhường 250ms để kịp lưu file / hiện dialog.
