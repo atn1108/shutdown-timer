@@ -61,6 +61,10 @@ Chuột phải icon khay: Mở app / Hủy hẹn giờ / Thoát. Không hẹn gi
 Trước khi hết giờ, app tự "dọn dẹp" các phiên AI/code đang mở (áp dụng cho Tắt máy,
 Khởi động lại và Đăng xuất — **chế độ Ngủ giữ nguyên mọi app**):
 
+- **Live detect:** dòng `Sẽ đóng: OpenCode, Antigravity, ...` ngay dưới status —
+  tự quét tên process whitelist mỗi 5 giây (chỉ đọc, không đóng gì). Chọn **Ngủ** thì
+  dòng đổi thành "giữ nguyên app đang mở" cho đúng sự thật.
+
 1. **Còn 60 giây** → đóng lịch sự (`CloseMainWindow`) theo thứ tự:
    `opencode → antigravity → cursor → code (VS Code) → windsurf → trae → claude → zed`
    — mỗi app được nhường 250ms để kịp lưu file / hiện dialog.

@@ -330,6 +330,29 @@ body {
   color: var(--color-accent);
 }
 
+/* ============ Phiên AI đang mở (live detect) ============ */
+/* Cùng họ pill với .status nhưng nhỏ hơn 1 bậc = info phụ; ẩn khi không có app */
+.sessions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--color-muted);
+  max-width: 100%;
+  min-height: 22px;
+  text-align: center;
+}
+
+.sessions__icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+}
+
 /* ============ Time picker panel ============ */
 /* Không khung bao: presets + ô nhập nằm thẳng trên nền */
 .panel {
@@ -665,5 +688,9 @@ body {
   }
   .hint {
     min-height: 18px;
+  }
+  .sessions {
+    min-height: 20px;
+    padding: 2px var(--space-3);
   }
 }

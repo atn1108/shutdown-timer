@@ -7,6 +7,8 @@ const timeDisplay = document.getElementById("timeDisplay");
 const ringLabel = document.getElementById("ringLabel");
 const ringCancel = document.getElementById("ringCancel");
 const statusLine = document.getElementById("statusLine");
+const sessionsLine = document.getElementById("sessionsLine");
+const sessionsText = document.getElementById("sessionsText");
 const statusText = document.getElementById("statusText");
 const presetsEl = document.getElementById("presets");
 const inputHours = document.getElementById("inputHours");
@@ -285,6 +287,34 @@ function startAutoConfirm() {
   }, 2000);
 }
 
+/* ============ Live detect: phiên AI đang mở ============ */
+// Cứ 5s quét tên process trong whitelist — CHỈ ĐỌC, không đóng gì.
+// Hiện pill "Sẽ đóng: OpenCode, Antigravity, ..." dưới status; chọn Ngủ thì
+// đổi thành "giữ nguyên app đang mở" cho đúng sự thật.
+let lastRunningSessions = [];
+
+function renderSessions() {
+  const has = lastRunningSessions.length > 0;
+  sessionsLine.hidden = !has;
+  if (!has) return;
+  sessionsText.textContent = action === "sleep"
+    ? "Ngủ: giữ nguyên app đang mở"
+    : "Sẽ đóng: " + lastRunningSessions.map((n) => PROCESS_NAMES[n] || n).join(", ");
+}
+
+async function refreshSessions() {
+  try {
+    const r = await window.timerAPI.detectSessions(INTERRUPT_PRIORITY);
+    lastRunningSessions = Array.isArray(r && r.running) ? r.running : [];
+    renderSessions();
+  } catch {
+    /* app đang đóng giữa chừng, bỏ qua */
+  }
+}
+
+setInterval(refreshSessions, 5000);
+refreshSessions();
+
 function maybeInterrupt(remainingMs) {
   // Chế độ Ngủ: KHÔNG đóng gì — máy thức lại đúng trạng thái
   if (action === "sleep") return;
@@ -441,6 +471,7 @@ function setAction(next) {
   });
   localStorage.setItem(ACTION_KEY, next);
   refreshIdleLabels();
+  renderSessions(); // đổi sang Ngủ → pill chuyển sang "giữ nguyên app"
 }
 
 actionSeg.addEventListener("click", (e) => {

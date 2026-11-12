@@ -161,6 +161,22 @@ exit 0
   });
 }
 
+// Live detect: app nào trong whitelist đang chạy (chỉ đọc, không đóng gì)
+function detectSessions(names) {
+  return new Promise((resolve) => {
+    const safe = (Array.isArray(names) ? names : []).filter((n) => NAME_RE.test(n));
+    if (!safe.length) return resolve({ ok: true, running: [] });
+    const script =
+      `$names = @(${safe.map((n) => `'${n}'`).join(',')});` +
+      `$r = foreach ($n in $names) { if (Get-Process -Name $n -ErrorAction SilentlyContinue) { Write-Output $n } };` +
+      `Write-Output ($r -join ','); exit 0`;
+    exec(`powershell -NoProfile -Command "${script}"`, { windowsHide: true }, (err, stdout) => {
+      const running = (stdout || '').trim().split(',').filter(Boolean);
+      resolve({ ok: !err, running });
+    });
+  });
+}
+
 // --- Window ------------------------------------------------------------
 function createWindow() {
   // Chiều cao theo màn hình thật (display scaling 125%+ dễ vượt đáy)
@@ -268,6 +284,7 @@ ipcMain.handle('schedule', (_e, seconds, action) =>
 ipcMain.handle('cancel', () => cancelScheduled());
 ipcMain.handle('interrupt', (_e, payload) => interruptSessions(payload && payload.names, payload && payload.force));
 ipcMain.handle('auto-confirm', (_e, payload) => autoConfirmSave(payload));
+ipcMain.handle('detect-sessions', (_e, payload) => detectSessions(payload));
 ipcMain.on('set-running', (_e, value) => {
   timerRunning = !!value;
 });
